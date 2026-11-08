@@ -1,0 +1,15 @@
+# Python 3.10 or newer.
+# These are minimum versions. requirements-lock.txt has the exact versions the tests
+# passed with on Python 3.12; install from it if a newer release ever breaks something:
+#     pip install -r requirements-lock.txt
+numpy>=2.0
+scipy>=1.13
+matplotlib>=3.8
+websockets>=12
+# for get_example_data.py
+pandas>=2.0
+openpyxl>=3.1
+certifi>=2024.2.2
+# for Mission 3
+pynwb>=2.8
+nwbinspector>=0.5

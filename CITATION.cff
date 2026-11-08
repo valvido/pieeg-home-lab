@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this starter kit, please cite it and the PiEEG hardware paper."
+title: "PiEEG Home Lab"
+abstract: "Starter kit for 8-channel EEG with the PiEEG-8 shield on a Raspberry Pi: setup guide, wiring, live streaming, recording, spectral analysis and NWB conversion exercises."
+type: software
+license: MIT
+authors:
+  - family-names: "Vidović"
+    given-names: "Valentina"
+repository-code: "https://github.com/jurecerkez-code/pieeg-home-lab"
+keywords: [EEG, BCI, Raspberry Pi, ADS1299, PiEEG, NWB, neuroscience]
+references:
+  - type: conference-paper
+    title: "Raspberry PI Shield – for measure EEG (PIEEG)"
+    authors:
+      - family-names: "Rakhmatulin"
+        given-names: "Ildar"
+      - family-names: "Zhanikeev"
+        given-names: "Marat"
+      - family-names: "Parfenov"
+        given-names: "Andrey"
+    year: 2021
+    collection-title: "2021 5th International Conference on Electrical, Electronics, Communication, Computer Technologies and Optimization Techniques (ICEECCOT)"
+    start: 410
+    end: 413
+    doi: "10.1109/ICEECCOT52851.2021.9707969"

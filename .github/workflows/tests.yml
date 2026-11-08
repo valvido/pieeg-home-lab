@@ -1,0 +1,39 @@
+name: tests
+
+# Runs the test suite against simulate.py (a fake PiEEG Server) on every push.
+# Python 3.10 with the minimum requirements, and Python 3.12 with the exact versions
+# in requirements-lock.txt (the 3.12 job also checks that PiEEG's example data still downloads).
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: "3.10"
+            requirements: code/requirements.txt
+            network: "0"
+          - python: "3.12"
+            requirements: code/requirements-lock.txt
+            network: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: ${{ matrix.requirements }}
+      - name: Install
+        run: pip install -r ${{ matrix.requirements }} pytest
+      - name: Test
+        run: python -m pytest tests -v
+        env:
+          MPLBACKEND: Agg
+          PIEEG_NETWORK_TESTS: ${{ matrix.network }}

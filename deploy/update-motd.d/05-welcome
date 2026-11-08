@@ -1,0 +1,81 @@
+#!/bin/sh
+# Welcome on every SSH login: the lab, live status, how to run a session, a few commands.
+# Built by deploy/make_welcome.py in pieeg-home-lab. Edit that file, not this one.
+e=$(printf '\033')
+B="${e}[1m"; R="${e}[0m"
+c() { printf '%s[38;5;%sm' "$e" "$1"; }
+GOLD=$(c 179); DIM=$(c 103); INK=$(c 252); OK=$(c 114); BAD=$(c 203)
+E1=$(c 63); REF=$(c 45); BIAS=$(c 141)
+
+dot() { if [ "$1" = active ]; then printf '%s●%s %s' "$OK" "$R" "$2"; else printf '%s●%s %s %s(%s)%s' "$BAD" "$R" "$2" "$DIM" "$1" "$R"; fi; }
+srv=$(systemctl is-active pieeg-server 2>/dev/null)
+page=$(systemctl is-active tina-page 2>/dev/null)
+thr=$(vcgencmd get_throttled 2>/dev/null | cut -d= -f2)
+# Anything but a number (an error message, "1 error_msg=...") would abort the whole banner
+# at the arithmetic below, so treat it as "unknown" instead.
+case "$thr" in 0x[0-9a-fA-F]*|[0-9]*) ;; *) thr="" ;; esac
+pwnote=""
+if [ -z "$thr" ]; then pw="${DIM}●${R} power"
+elif [ $((thr & 1)) -ne 0 ]; then pw="${BAD}●${R} power"
+  pwnote="  ${BAD}Power is too low right now.${R} Use the 3 A power bank and the official cable.
+"
+elif [ $((thr & 0x10000)) -ne 0 ]; then pw="${GOLD}●${R} power"
+  pwnote="  ${GOLD}Power dipped since boot.${R} Check the cable, then reboot.
+"
+else pw="${OK}●${R} power"; fi
+IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+[ -n "$IP" ] || IP="the address from the router's device list"
+
+cat <<'ART'
+
+ [0m                                                             [0m[38;5;187m⢀⣠⠤⢤⣤⣀[0m
+ [0m [0m[38;5;103mOPEN SOURCE EEG  ·  STARTER KIT[0m                             [0m[38;5;187m⠈⢧[0m [0m[38;5;187m⢸⡇⢸⡟⠲⢤⡀[0m
+ [0m                                                              [0m[38;5;187m⢸⣀⣸⣇⡀[0m   [0m[38;5;187m⠙⢦[0m
+ [0m [0m[38;5;187m██████[0m[38;5;60m╗[0m [0m[38;5;187m██[0m[38;5;60m╗[0m[38;5;187m███████[0m[38;5;60m╗[0m[38;5;187m███████[0m[38;5;60m╗[0m [0m[38;5;187m██████[0m[38;5;60m╗[0m                       [0m[38;5;187m⢀⣠⣤⣼⡷⠾⢯⣿⣷⣤⡀[0m [0m[38;5;187m⣨⣧⡀[0m
+ [0m [0m[38;5;187m██[0m[38;5;60m╔══[0m[38;5;187m██[0m[38;5;60m╗[0m[38;5;187m██[0m[38;5;60m║[0m[38;5;187m██[0m[38;5;60m╔════╝[0m[38;5;187m██[0m[38;5;60m╔════╝[0m[38;5;187m██[0m[38;5;60m╔════╝[0m                     [0m[38;5;187m⢀⣴⣟⣩⣥⣈⢻⣦[0m [0m[38;5;187m⠈⠙⢿⣿⣆⠉[0m [0m[38;5;187m⢧[0m
+ [0m [0m[38;5;187m██████[0m[38;5;60m╔╝[0m[38;5;187m██[0m[38;5;60m║[0m[38;5;187m█████[0m[38;5;60m╗[0m  [0m[38;5;187m█████[0m[38;5;60m╗[0m  [0m[38;5;187m██[0m[38;5;60m║[0m  [0m[38;5;187m███[0m[38;5;60m╗[0m                  [0m[38;5;187m⢀⣤⣿⣿⠟⠯⢭⣛⣷⡝⢷⣄[0m  [0m[38;5;187m⠙⢿⢧[0m [0m[38;5;187m⠸⡄[0m
+ [0m [0m[38;5;187m██[0m[38;5;60m╔═══╝[0m [0m[38;5;187m██[0m[38;5;60m║[0m[38;5;187m██[0m[38;5;60m╔══╝[0m  [0m[38;5;187m██[0m[38;5;60m╔══╝[0m  [0m[38;5;187m██[0m[38;5;60m║[0m   [0m[38;5;187m██[0m[38;5;60m║[0m                [0m[38;5;187m⣠⣾⣿⣿⣭⣤⣄⣀[0m  [0m[38;5;187m⠈⠉[0m [0m[38;5;187m⠹⣷⡀[0m [0m[38;5;187m⠈⢻⡄[0m [0m[38;5;187m⡇[0m
+ [0m [0m[38;5;187m██[0m[38;5;60m║[0m     [0m[38;5;187m██[0m[38;5;60m║[0m[38;5;187m███████[0m[38;5;60m╗[0m[38;5;187m███████[0m[38;5;60m╗╚[0m[38;5;187m██████[0m[38;5;60m╔╝[0m               [0m[38;5;187m⣾⣵⣿⣿⣿⣿⣽⣿⣿⣿⣷⣦⣄⡀[0m [0m[38;5;187m⠈⢻⣆[0m [0m[38;5;187m⠈⣷⢀⡇[0m
+ [0m [0m[38;5;60m╚═╝[0m     [0m[38;5;60m╚═╝╚══════╝╚══════╝[0m [0m[38;5;60m╚═════╝[0m                [0m[38;5;187m⢸⣿⠟⠋⠁⠉⢙⣿⣿⡿⣿⣿⣿⣿⣶⡟⣿⢻⣆[0m [0m[38;5;187m⣿⣸[0m
+ [0m                                                    [0m[38;5;187m⢿⡟[0m    [0m[38;5;187m⢸⣝⣿[0m[38;5;63m⢿⣿⣿⣿[0m[38;5;187m⣿⣿⣿⣿⣇⢿⣴⣿⠃[0m
+ [0m  [0m[38;5;179m╦ ╦╔═╗╔╦╗╔═╗  ╦  ╔═╗╔╗ [0m                           [0m[38;5;187m⠈⣿⣿⣷⣠⠛⣿⣿⣿⣿⡷⠈[0m[38;5;63m⢻⣿⣿[0m[38;5;187m⣿⣿⣿⣿⢻⠇[0m
+ [0m  [0m[38;5;179m╠═╣║ ║║║║║╣   ║  ╠═╣╠╩╗[0m                            [0m[38;5;187m⢸⠛⣿⣿[0m [0m[38;5;187m⠙⠛⠛⠉[0m   [0m[38;5;187m⠙[0m[38;5;63m⢻[0m[38;5;187m⣿⣿⣿⣿⣼[0m
+ [0m  [0m[38;5;179m╩ ╩╚═╝╩ ╩╚═╝  ╩═╝╩ ╩╚═╝[0m                            [0m[38;5;187m⢸⢸⡏⠃⢠⡄[0m      [0m[38;5;187m⢀⡛⣻⣿⣿⣿⣿[0m
+ [0m                                                     [0m[38;5;187m⠈⣏⣛⣿⣛⡁[0m      [0m[38;5;187m⣨⠉[0m[38;5;63m⣯[0m[38;5;187m⣿⣿⡿⠉[0m
+ [0m [0m[38;5;103m8 CHANNELS · ADS1299 · 24 BIT · 250 HZ · PI 3[0m        [0m[38;5;187m⠘⡿⣿⣿⠟⠃[0m   [0m[38;5;187m⢀⣴⠏[0m [0m[38;5;63m⣿⡿[0m[38;5;187m⠋⠁[0m
+ [0m  [0m[38;5;146m⣤[0m [0m[38;5;63m⣠[0m [0m[38;5;63m⢰[0m[38;5;146m⡇[0m [0m[38;5;63m⢸⡇⢰[0m[38;5;146m⡆⢀⡄[0m     [0m[38;5;146m⣴[0m [0m[38;5;146m⢠⡄[0m   [0m[38;5;146m⡿⡄[0m   [0m[38;5;146m⣠⣴⢧[0m     [0m[38;5;146m⣸⡄[0m [0m[38;5;146m⣆[0m [0m[38;5;146m⣶[0m         [0m[38;5;187m⠹⣄⠉[0m [0m[38;5;187m⢀⣀⣤⡶⠟⠁[0m  [0m[38;5;63m⢹⣧[0m
+ [0m [0m[38;5;146m⡄⣿[0m [0m[38;5;63m⡟⡆⢸[0m[38;5;146m⠻[0m[38;5;63m⡇⣼⡇⢸[0m[38;5;146m⢷⢸⣧⣤⣦⣄⣆[0m [0m[38;5;146m⡿⡄⣸⢧⢀⣷[0m [0m[38;5;146m⡇⡇⢸⣄[0m [0m[38;5;146m⡟⣿⠘⡇[0m  [0m[38;5;146m⣰⣆⡏⡇[0m [0m[38;5;146m⣿⣄⣿⡄[0m         [0m[38;5;187m⠈⠉⢹⠋⠉⠁[0m     [0m[38;5;63m⠈⠙⠷⣄⡀[0m
+ [0m [0m[38;5;146m⣷⠿⡄[0m[38;5;63m⡇⡇⢸[0m [0m[38;5;63m⣇⡇⢹⢸[0m[38;5;146m⠈⣿⠉⠛⢿⡿⢸⢠⠇⢹⡇⢸⣼⢹⣰⠃⢻⣸⢹⣿⠁⠋[0m [0m[38;5;146m⣇⣇⣰⡟⢸⡇⣇⢸⠁⣿⠉⢹[0m         [0m[38;5;187m⣀⡴⠚[0m         [0m[38;5;187m⣀⡴[0m[38;5;63m⠋⢻⡄[0m
+ [0m [0m[38;5;146m⠟[0m [0m[38;5;146m⡿[0m[38;5;63m⠇⢳⡾[0m [0m[38;5;63m⠹[0m [0m[38;5;63m⠘⠋[0m [0m[38;5;146m⠁[0m  [0m[38;5;146m⠈⠁⠸⠏[0m [0m[38;5;146m⠈⠃⠈⠋⠈⡿[0m [0m[38;5;146m⠈⠃⠈⠁[0m   [0m[38;5;146m⢸⡟⢻⠁⢸⠁⠙⣿[0m [0m[38;5;146m⠏[0m [0m[38;5;146m⠈[0m         [0m[38;5;187m⠳⣄⡀[0m     [0m[38;5;187m⣀⣠⠴⠚⠁[0m  [0m[38;5;63m⠸⣿[0m
+ [0m [0m[38;5;103mREAL EEG, 2 S, PIEEG EXAMPLE DATA[0m  [0m[38;5;63mALPHA 10 HZ[0m           [0m[38;5;187m⠉⠉⠓⠒⠋⠉⠁[0m       [0m[38;5;63m⣿[0m[38;5;187m⡆[0m
+
+ART
+cat <<TXT
+  ${B}${INK}Welcome to tina. This is your EEG lab.${R}
+
+  $(dot "$srv" "PiEEG Server")    $(dot "$page" "your page")    $pw
+${pwnote}
+  ${GOLD}OPEN ON YOUR LAPTOP${R}
+    ${B}Your page${R}     http://tina.local:8080   ${DIM}manual, kit, live signal${R}
+    ${B}Dashboard${R}     http://tina.local:1617   ${DIM}press Connect${R}
+    ${B}Data${R}          ws://tina.local:1616     ${DIM}Python on your laptop${R}
+    ${DIM}If .local does not answer, use $IP instead.${R}
+
+  ${GOLD}A SESSION IN FOUR STEPS${R}
+    ${B}1  Power${R}    Pi on the power bank, bank not charging. Laptop on battery.
+                No HDMI, no Ethernet cable while stickers are on.
+    ${B}2  Skin${R}     Alcohol on each spot, 30 s to dry, fresh stickers, press 5 s.
+    ${B}3  Stick${R}    ${E1}E1${R} left forehead   ${REF}REF${R} behind left ear   ${BIAS}BIAS${R} behind right ear
+    ${B}4  Plug${R}     ${E1}E1${R} on pin E1   ${REF}REF${R} on Ref   ${BIAS}BIAS${R} on Biasout   ${DIM}clip on the snap${R}
+                Dashboard: Connect, close your eyes, alpha shows up at 10 Hz.
+
+  ${GOLD}HERE ON THE PI${R}
+    pieeg-server doctor                  ${DIM}checks the board and the chain${R}
+    systemctl status pieeg-server        ${DIM}is the server running${R}
+    sudo systemctl restart pieeg-server  ${DIM}restart it${R}
+    sudo shutdown -h now                 ${DIM}off; unplug when the green light stops${R}
+
+  ${DIM}Guide and code: github.com/jurecerkez-code/pieeg-home-lab${R}
+  ${DIM}Not a medical device.${R}
+
+TXT

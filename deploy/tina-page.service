@@ -1,0 +1,23 @@
+[Unit]
+Description=Tina EEG page (static)
+After=network.target
+
+[Service]
+Type=simple
+User=jure
+WorkingDirectory=/home/jure/tina-eeg
+# Python's built in server, static files only.
+ExecStart=/usr/bin/python3 -m http.server 8080 --bind 0.0.0.0 --directory /home/jure/tina-eeg
+Restart=on-failure
+RestartSec=5
+# The server only reads files, so it gets no write access anywhere and no new privileges.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+
+[Install]
+WantedBy=multi-user.target

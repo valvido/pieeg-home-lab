@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tina.local · PiEEG Home Lab</title>
+<meta name="description" content="The PiEEG Home Lab page served by the Pi itself: manual, spec sheet and the live EEG signal in one.">
+<link rel="icon" href="assets/favicon.svg?v=px1" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png?v=px1" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=px1">
+<meta name="theme-color" content="#0b0d33">
+<link rel="stylesheet" href="assets/style.css?v=3d3b5dcf">
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero framed">
+  <div class="hero-text">
+    <p class="kicker">Open source EEG &nbsp;·&nbsp; Starter kit</p>
+    <h1 class="title">PiEEG<br>Home Lab</h1>
+    <p class="specline">8 CHANNEL EEG · RASPBERRY PI 3 · ADS1299 · 24 BIT · 250 HZ</p>
+    <div class="chips" role="group" aria-label="Ways in">
+      <button type="button" aria-pressed="true" data-cmd="ssh jure@tina.local"
+        data-note="On your laptop: open a terminal, paste this, press Enter.">TERMINAL</button>
+      <button type="button" aria-pressed="false" data-cmd="http://tina.local:1617"
+        data-note="The dashboard, in any browser on the same WiFi. Press Connect.">DASHBOARD</button>
+      <button type="button" aria-pressed="false" data-cmd="python code/live_view.py"
+        data-note="From the pieeg-home-lab repo on your laptop, for your own analysis.">PYTHON</button>
+    </div>
+    <div class="cmd prompt"><button class="copy" type="button">Copy</button><pre id="hero-cmd">ssh jure@tina.local</pre></div>
+    <p class="prompt-note" id="hero-note">On your laptop: open a terminal, paste this, press Enter.</p>
+  </div>
+  <img class="athena" src="assets/svg/athena.svg" width="340" height="460"
+    alt="Athena bust wearing the kit: a sticker on the left forehead, its blue lead over the ear, REF and BIAS leads from behind the ear">
+  <img class="hero-trace" src="assets/svg/trace.svg" width="536" height="100"
+    alt="Six seconds of real EEG from PiEEG's example recording, alpha bursts at 10 Hz in blue">
+</header>
+
+<div class="hello">
+  <h2>Your brain on the network.</h2>
+  <p class="lede">Eight channels of EEG, EMG and ECG, read by a Raspberry Pi and streamed to this page.
+    The manual, the spec sheet and the live signal in one, served by the Pi itself, so it is there
+    whenever the Pi is.</p>
+  <div class="status" aria-live="polite">
+    <span class="item"><span class="dot on"></span>this page</span>
+    <span class="badge sample" id="badge" data-state="connecting">
+      <span class="dot"></span><span id="badge-label">Connecting</span>
+    </span>
+  </div>
+</div>
+
+<section aria-labelledby="ssh-h">
+  <h2 id="ssh-h">Open the Pi from your laptop</h2>
+  <p>The Pi has no screen. You talk to it from your laptop, over the WiFi you are both on.</p>
+  <ol class="plain">
+    <li>Open <b>Terminal</b>: press <kbd>⌘</kbd> + <kbd>Space</kbd>, type <code>Terminal</code>, press Enter.</li>
+    <li>Type this and press Enter:</li>
+  </ol>
+  <div class="cmd"><button class="copy" type="button">Copy</button><pre>ssh jure@tina.local</pre></div>
+  <p class="expect">The first time it asks whether to trust the Pi: type <b>yes</b>. Then it asks for the Pi's
+    password; nothing appears while you type it, that is normal. You land in your
+    lab's welcome, with the links, a session in four steps and the commands.</p>
+  <p class="caption">To leave, type <code>exit</code>. If <code>tina.local</code> does not answer,
+    use the address the welcome shows, or the one in the router's device list.</p>
+</section>
+
+<section aria-labelledby="specs-h">
+  <h2 id="specs-h">What the thing is</h2>
+  <dl class="specs">
+    <div><dt>Channels</dt><dd>8, plus REF and BIAS</dd></div>
+    <div><dt>Signals</dt><dd>EEG, EMG, ECG</dd></div>
+    <div><dt>Converter</dt><dd>ADS1299, 24-bit</dd></div>
+    <div><dt>Sample rate</dt><dd>250 per second</dd></div>
+    <div><dt>Host</dt><dd>Raspberry Pi 3 Model B</dd></div>
+    <div><dt>Power</dt><dd>5 V power bank only</dd></div>
+  </dl>
+  <p class="caption">The ADS1299 chip can reach 16 thousand samples per second. The server on the Pi
+    streams at 250 and does not offer a setting for it, so 250 is the number that matters here.</p>
+</section>
+
+<section aria-labelledby="signal-h">
+  <h2 id="signal-h">Your signal</h2>
+  <div class="signal">
+    <canvas id="traces" width="760" height="352" role="img"
+      aria-label="Eight EEG traces, four seconds of scrolling data"></canvas>
+  </div>
+  <p class="caption" id="signal-note">The last four seconds, all eight channels, in microvolts.
+    When the badge above says LIVE, this is you. When it says SAMPLE, it is a six second simulated
+    recording so the page still works with the Pi switched off. In your start montage only CH1 has a
+    sticker (Fp1). The sample leaves CH2 to CH8 quiet. Live, a channel with nothing on it can show
+    anything, and none of it means anything.</p>
+  <table class="sr">
+    <caption>Channel positions</caption>
+    <tbody>
+      <tr><td>CH1</td><td>Fp1, against M1</td></tr><tr><td>CH2</td><td>Fp2, optional</td></tr>
+      <tr><td>CH3 to CH8</td><td>not connected in the start montage</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section aria-labelledby="uses-h">
+  <h2 id="uses-h">What you can do with it</h2>
+  <p>Six things the kit is built for. One of them is the reason it exists, the other five are why it is
+    interesting.</p>
+
+  <div class="cards">
+
+    <details class="card" open>
+      <summary><span class="num">01</span><span class="name">Focus and relaxation</span>
+        <span class="one">EEG, Fp1 against M1</span></summary>
+      <div class="body">
+        <figure class="card-figure">
+          <img src="assets/svg/head-map.svg" width="600" height="313"
+            alt="Adult head seen from the front left: E1 sticker on the left forehead at Fp1, REF on the bone behind the left ear, BIAS behind the right ear">
+        </figure>
+        <p>Alpha grows at the back of the head when the eyes close. Beta rises when you work something
+          out. This page measures both on channel 1 and shows them as a focus number and a relaxation
+          number: a rough readout, not a validated score, but enough to see the effect while sitting
+          still and doing nothing visible.</p>
+        <p class="muted">Your start montage: E1 on the left forehead (Fp1), REF on the bone behind the left
+          ear (M1), BIAS behind the right ear (M2). Alpha is strongest at the back of the head (O1, O2), but
+          that is under hair, where stickers do not hold. From the forehead it is weaker and still shows when
+          you close your eyes.</p>
+        <div class="demo-row">
+          <button class="demo-btn" id="demo-eyes" aria-pressed="false">Close eyes</button>
+          <button class="demo-btn" id="demo-math" aria-pressed="false">Do mental math</button>
+        </div>
+        <div class="scores">
+          <div class="score"><div class="k">Focus</div><div class="v" id="score-focus">0.00</div></div>
+          <div class="score"><div class="k">Relaxation</div><div class="v" id="score-relax">0.00</div></div>
+        </div>
+        <p class="caption" id="demo-note">Simulated, to show the shape of the effect. Real recordings are
+          noisier, and both scores sit near 0.1 to 0.25 when you are just sitting there.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="num">02</span><span class="name">Muscle controlled robotics</span>
+        <span class="one">EMG, forearm</span></summary>
+      <div class="body">
+        <figure class="card-figure">
+          <img src="assets/svg/placement-forearm.svg" width="600" height="276"
+            alt="Left forearm, palm side: four stickers E1 to E4 along the forearm muscles, REF on the elbow bone, BIAS on the wrist bone">
+        </figure>
+        <p>Clench a fist and the forearm channels burst. A threshold turns that burst into a trigger for a
+          gripper, a robot arm or a game, and the Pi runs the control code right next to the signal.</p>
+        <p class="muted">Stickers along the forearm muscles, up to eight, each read against REF on the
+          elbow bone. BIAS on the wrist bone. The drawing shows four.</p>
+        <p class="caption">Needs a WebSocket consumer, a webhook, or the three free GPIO pins on the shield.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="num">03</span><span class="name">Heart rate and ECG</span>
+        <span class="one">ECG, chest</span></summary>
+      <div class="body">
+        <figure class="card-figure">
+          <img src="assets/svg/placement-chest.svg" width="600" height="332"
+            alt="Chest seen from the front: E1 below the left collarbone, E3 at V4, E2 on the lower left ribs, REF below the right collarbone, BIAS on the lower right ribs">
+        </figure>
+        <p>Three stickers on the chest already give a clean trace. A few squats and the rate follows, which is the
+          fastest way to prove to yourself that the signal is real, then record the session to CSV.</p>
+        <p class="muted">E1 below the left collarbone, E2 on the lower left ribs, E3 at V4. REF below the
+          right collarbone, BIAS on the lower right ribs. Read against REF, E1 gives lead I and E2 lead II.</p>
+        <p class="caption">Beats per minute comes from R peak timing. In the product demo it reads 66 at rest.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="num">04</span><span class="name">Dashboard in any browser</span>
+        <span class="one">software only</span></summary>
+      <div class="body">
+        <p>PiEEG Server hosts a dashboard on the Pi itself. Open it on the Pi, or from any laptop, tablet
+          or phone on the same network, press Connect and watch all eight channels.</p>
+        <p class="muted">That is a different page from this one: the real dashboard with filters,
+          recording and integrations.</p>
+        <div class="cmd"><button class="copy" type="button">Copy</button><pre>http://tina.local:1617</pre></div>
+        <p class="caption">The session lobby has the server address already filled in. When it opens it
+          says no signal yet, press Connect.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="num">05</span><span class="name">VR avatars</span>
+        <span class="one">VRChat over OSC</span></summary>
+      <div class="body">
+        <p>Start the server with the OSC bridge and it pushes five band powers into VRChat as avatar
+          parameters, each scaled from 0 to 1. Close your eyes and the avatar follows.</p>
+        <div class="cmd"><button class="copy" type="button">Copy</button><pre>/avatar/parameters/EEG_Delta
+/avatar/parameters/EEG_Theta
+/avatar/parameters/EEG_Alpha
+/avatar/parameters/EEG_Beta
+/avatar/parameters/EEG_Gamma</pre></div>
+        <p class="caption">Needs VRChat plus OSC. This is the part that turns the kit into something to
+          play with rather than something to read.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="num">06</span><span class="name">Smart home triggers</span>
+        <span class="one">webhooks</span></summary>
+      <div class="body">
+        <p>Close your eyes to turn the lights off. The server fires a webhook when alpha power on CH1
+          crosses a threshold, and IFTTT or Zapier does the rest.</p>
+        <p class="muted">Two events leave the Pi: <code>band_power_above</code> and
+          <code>band_power_below</code>.</p>
+        <p class="caption">Needs a webhook endpoint. Same idea works for a fan, a lamp, or anything that
+          already has an app.</p>
+      </div>
+    </details>
+
+  </div>
+</section>
+
+<section aria-labelledby="pi-h">
+  <h2 id="pi-h">Get the Pi ready</h2>
+  <p>This comes before everything else. Without it there is nothing to install onto. Six steps from a
+    blank card to a login prompt.</p>
+
+  <ol class="steps plain">
+    <li><b>The parts.</b> A Pi 3, 4 or 5. A microSD card of 8 GB or more. A card reader. And the right
+      power supply: micro USB at 2.5 A for a Pi 3, USB-C at 3 A for a Pi 4 or 5. The wrong supply looks
+      like a broken Pi, so this matters.</li>
+    <li><b>Install Raspberry Pi Imager</b> on a laptop. It is the official tool and there is nothing to
+      configure.</li>
+    <li><b>Set the settings before writing.</b> In Imager choose the Pi model, then <b>Raspberry Pi OS
+      Lite (64-bit)</b> under "Raspberry Pi OS (other)": no desktop, so the Pi's 1 GB of memory goes to
+      the server. Then open the customisation dialog and set the
+      hostname to <code>tina</code>, enable SSH with a password, set the username, set the WiFi
+      name and password with country DE, and set the timezone to Europe/Berlin. Imager writes these as
+      configuration files on the card. Without them the Pi needs a monitor and a keyboard to set up.</li>
+    <li><b>Write, eject, insert, power.</b> On this Pi 3 a normal boot reaches the login prompt in about a
+      minute (measured: 63 seconds). The first boot is longer because it resizes the card and may reboot
+      once on its own, so give it three minutes. Do not pull the power during it.</li>
+    <li><b>Find it.</b> Open <code>http://tina.local</code> in a browser, or run
+      <code>ping tina.local</code>. If neither answers, open the router's admin page and look for a
+      device called <code>tina</code>.</li>
+    <li><b>Log in.</b> <code>ssh jure@tina.local</code>. Accept the fingerprint with
+      <code>yes</code>. The password does not appear while you type it, that is normal.</li>
+  </ol>
+
+  <div class="trap">
+    <span class="label">The Pi 3 is 2.4 GHz only</span>
+    <p>If the router's 2.4 GHz band is switched off, or the network name belongs only to the 5 GHz band,
+      the Pi will never appear and nothing else will fix it. This happened here: the first scan showed
+      only a 5 GHz entry for the same name, and the 2.4 GHz one only showed up on a forced rescan.</p>
+  </div>
+
+  <div class="trap">
+    <span class="label">The address can change</span>
+    <p><code>tina.local</code> is a name resolved over the network, not a fixed address. When it
+      stops answering, the router page is the answer. A reinstall is not.</p>
+  </div>
+</section>
+
+<section aria-labelledby="setup-h">
+  <h2 id="setup-h">Set it up</h2>
+  <p>Eight steps, in the order that works. The two long ones are the shield and the software.</p>
+
+  <ol class="steps">
+
+    <li>
+      <h3>Gather the kit</h3>
+      <div class="progress"><strong id="kit-count">0 of 8</strong><span>ready</span>
+        <button class="linkish" id="kit-reset" type="button">start over</button></div>
+      <ul class="checklist" id="kit">
+        <li><label><input type="checkbox" data-kit="pi"><span><span class="what">Raspberry Pi 3 Model B with its microSD card</span>
+          <span class="why">PiEEG Server is already installed on the card</span></span></label></li>
+        <li><label><input type="checkbox" data-kit="shield"><span><span class="what">PiEEG-8 board</span>
+          <span class="why">8 channels on an ADS1299, ten pins for the leads</span></span></label></li>
+        <li><label><input type="checkbox" data-kit="stickers"><span><span class="what">Ag/AgCl electrode stickers, 26 mm</span>
+          <span class="why">pre-gelled, single use, three per session</span></span></label></li>
+        <li><label><input type="checkbox" data-kit="clipcables"><span><span class="what">Clip cables, 20 cm</span>
+          <span class="why">female end on one side, alligator clip for the sticker's snap on the other</span></span></label></li>
+        <li><label><input type="checkbox" data-kit="jumpers"><span><span class="what">Extension jumpers, 20 cm, male to female</span>
+          <span class="why">one per lead, so each lead is 40 cm and reaches all three stickers</span></span></label></li>
+        <li><label><input type="checkbox" data-kit="bank"><span><span class="what">Power bank, 5 V, 3 A, and the official micro USB cable</span>
+          <span class="why">charged, and not charging while the stickers are on</span></span></label></li>
+        <li><label><input type="checkbox" data-kit="wipes"><span><span class="what">Alcohol wipes</span>
+          <span class="why">clean, dry skin under every sticker</span></span></label></li>
+        <li><label><input type="checkbox" data-kit="laptop"><span><span class="what">Laptop on battery, charger unplugged</span>
+          <span class="why">on the same WiFi as the Pi. The dashboard lives in its browser</span></span></label></li>
+      </ul>
+    </li>
+
+    <li>
+      <h3>Choose the power source</h3>
+      <p>Three options, one of them safe. Press each one to see why.</p>
+      <div class="choices" role="group" aria-label="Power source">
+        <button class="choice yes" type="button" aria-pressed="false" data-verdict="Correct. A charged 5 V power bank with at least 3 A, not plugged into the wall while the stickers are on.">
+          <span class="title">Power bank, 5 V 3 A</span>
+          <span class="verdict">press to check</span></button>
+        <button class="choice no" type="button" aria-pressed="false" data-verdict="Wrong, and dangerous. A wall charger puts the mains on the board, which has no isolation from the electrodes.">
+          <span class="title">Wall charger</span>
+          <span class="verdict">press to check</span></button>
+        <button class="choice no" type="button" aria-pressed="false" data-verdict="Wrong. The moment that laptop is on its charger, its USB port carries the mains to the board. Same problem, less obvious, and easy to forget mid session.">
+          <span class="title">Laptop USB port</span>
+          <span class="verdict">press to check</span></button>
+      </div>
+      <p class="caption">The board has no isolation between the electrodes and the supply. That single fact
+        is why the whole kit runs from a battery.</p>
+      <figure class="card-figure">
+        <img src="assets/svg/powerbank.svg" width="600" height="388"
+          alt="Raspberry Pi 3 with the PiEEG-8 on top, powered by a power bank through the micro USB cable into PWR IN">
+      </figure>
+    </li>
+
+    <li>
+      <h3>Mount the shield</h3>
+      <figure class="card-figure">
+        <img src="assets/svg/shield-orientation.svg" width="600" height="247"
+          alt="PiEEG-8 held above the Raspberry Pi 3, pin 1 over pin 1 at the microSD end, ready to press straight down">
+      </figure>
+      <ol class="plain">
+        <li>Power off and unplug the power bank. Never seat or lift the shield with power connected.</li>
+        <li>Touch something metal to discharge static before you handle the board.</li>
+        <li>Find pin 1 using the drawing above. It is the corner nearest the microSD slot on a Pi 3.</li>
+        <li>Line the shield's socket up with all 40 pins and sight down the row before pressing.</li>
+        <li>Press straight down, evenly, near both ends of the socket, not in the middle of the board.</li>
+        <li>Check three things: no pin protruding, shield parallel to the board, no gap at either end.</li>
+        <li>To remove it later, lift evenly alternating the ends. Never lever from one corner.</li>
+        <li>Only then move on to the electrodes.</li>
+      </ol>
+      <div class="choices" role="group" aria-label="Shield alignment">
+        <button class="choice yes" type="button" aria-pressed="false" data-verdict="All 40 pins seated. The shield sits flat and square over the Pi.">
+          <span class="title">Aligned</span><span class="verdict">press to check</span></button>
+        <button class="choice no" type="button" aria-pressed="false" data-verdict="Shifted by one pin. Wrong voltages land on wrong pins: at best every channel reads noise and nothing warns you, at worst the board is damaged. Power off, lift, seat again.">
+          <span class="title">Shifted by one pin</span><span class="verdict">press to check</span></button>
+      </div>
+    </li>
+
+    <li>
+      <h3>Install PiEEG Server</h3>
+      <p>Your card already has this. <code>pieeg-server --version</code> prints <code>0.49.0</code>. This
+        part is here for a new card or a repair, written out command by command with the expected output
+        after each check, because a silent command is indistinguishable from a broken one. The reference
+        copy is <code>docs/setup-raspberry-pi.md</code> in the repository; a test in <code>tests/</code>
+        keeps the commands here identical to it.</p>
+
+      <h3>4.1 Open a terminal on the Pi</h3>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>ssh jure@tina.local</pre></div>
+
+      <h3>4.2 Update the system</h3>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>sudo apt update &amp;&amp; sudo apt full-upgrade -y</pre></div>
+      <p class="expect">Ten to twenty minutes on a Pi 3. It is not stuck.</p>
+
+      <h3>4.3 Build tools</h3>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>sudo apt install -y git python3-dev build-essential</pre></div>
+      <p class="expect">Not optional. Without them the SPI module cannot be compiled.</p>
+
+      <h3>4.4 Get a known good version</h3>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>git clone https://github.com/pieeg-club/PiEEG-server.git ~/PiEEG-server
+cd ~/PiEEG-server
+git checkout -b homelab 9bf350310bb492e1373edfe5b0714857f1fe04e9
+git log -1 --format='%h %ad %s' --date=short</pre></div>
+      <p class="expect">Expect <b>9bf35031 2026-09-16 Update README</b>. The version is pinned on purpose,
+        so the device cannot break because somebody upstream pushed a change.</p>
+
+      <h3>4.5 Run the setup script</h3>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>sudo -v &amp;&amp; bash setup.sh</pre></div>
+      <p class="expect">Seven stages, each with a tick: detect the Pi, check prerequisites, install
+        packages, enable SPI, build the venv, create the service, self test. The file is not marked
+        executable in PiEEG's repository, which is why it runs as <code>bash setup.sh</code>.</p>
+
+      <div class="trap">
+        <span class="label">If it stops at cannot obtain sudo privileges</span>
+        <p>The script checks sudo at stage two with its own messages hidden, so a password prompt there
+          can look like a failure. <code>sudo -v</code> in front asks for the password first and keeps
+          sudo unlocked for the script. Running the script twice is safe.</p>
+      </div>
+
+      <h3>4.6 Reboot</h3>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>sudo reboot</pre></div>
+      <p class="expect">SPI does not exist until after this. Before the reboot,
+        <code>doctor</code> correctly reports no SPI devices, and that is not a failure.</p>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>ls -l /dev/spidev0.0 /dev/gpiochip0
+grep -E '^(dtparam=spi=on|core_freq_fixed=1)' /boot/firmware/config.txt</pre></div>
+      <p class="expect">Both devices must exist, and both lines must be in the config file.</p>
+
+      <h3>4.7 Point the service at the 8 channel board</h3>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>sudo sed -i 's|bin/pieeg-server|bin/pieeg-server --device pieeg8|' /etc/systemd/system/pieeg-server.service
+grep ExecStart /etc/systemd/system/pieeg-server.service
+sudo systemctl daemon-reload
+sudo systemctl restart pieeg-server</pre></div>
+      <p class="expect">Expect <b>ExecStart=/home/jure/PiEEG-server/.venv/bin/pieeg-server --device pieeg8
+        --gpio-chip /dev/gpiochip0</b>. The device flag once, the chip flag present.</p>
+
+      <h3>4.8 Prove it</h3>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>pieeg-server doctor
+systemctl is-active pieeg-server
+curl -s http://127.0.0.1:1616/health
+curl -s http://127.0.0.1:1616/api/info</pre></div>
+      <p class="expect">Expect <b>All checks passed! Ready to stream EEG data.</b>, then <b>active</b>, then
+        <b>ok</b>, then <b>{"version": "0.49.0", "branch": null}</b>. In that order.</p>
+
+      <div class="trap">
+        <span class="label">The other way, if you want it</span>
+        <p>The official one line install. It pulls the newest main, so it does not give the pinned
+          version. Fine for a clean start, not for a device you want to keep working.</p>
+        <div class="cmd"><button class="copy" type="button">Copy</button><pre>curl -sSL https://raw.githubusercontent.com/pieeg-club/PiEEG-server/main/install.sh | bash</pre></div>
+      </div>
+
+      <p class="muted">Measured on your hardware: Pi 3 Model B Rev 1.2, Raspberry Pi OS Lite 64-bit
+        Trixie, Python 3.13.5. Clean card to a passing doctor: about 25 minutes, 12 of them apt and 5 of
+        them pip. Installed version 0.49.0.</p>
+    </li>
+
+    <li>
+      <h3>Connect the electrodes</h3>
+      <figure class="card-figure">
+        <img src="assets/svg/electrodes.svg" width="600" height="333"
+          alt="One complete lead: sticker with the alligator clip on its snap, 20 cm clip cable, the joint, 20 cm jumper, and its female end on a pin">
+      </figure>
+      <p>Three stickers, three leads. Each lead is a jumper plus a clip cable, 40 cm in all: the jumper's
+        female end goes onto the pin, the clip cable plugs into the jumper's male end, and the clip bites the
+        metal snap in the middle of the sticker, not the foam. Push every joint fully home.</p>
+      <p><b>Stickers go on skin, not hair.</b> Wipe each spot with alcohol and let it dry for 30 seconds.
+        Stick E1 on the left forehead with its lower edge just above the eyebrow, REF on the bony bump
+        behind the left ear, BIAS on the same spot behind the right ear. Press each one for five seconds.
+        The drawing in card 01 shows all three.</p>
+      <div class="scroll">
+      <table>
+        <thead><tr><th>Pin on the board</th><th>Sticker</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr><td><code>E1</code></td><td>Fp1</td><td>left forehead</td></tr>
+          <tr><td><code>Ref</code></td><td>M1</td><td>behind the left ear</td></tr>
+          <tr><td><code>Biasout</code></td><td>M2</td><td>behind the right ear</td></tr>
+          <tr><td><code>E2</code></td><td>Fp2</td><td>right forehead, optional</td></tr>
+          <tr><td><code>E3</code> to <code>E8</code></td><td>none</td><td>stay empty for now</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="muted">Where the Pi goes: on a shelf at shoulder height just beside your left shoulder,
+        or on the pillow beside your left ear if you lie down. Measured on an adult head and shoulders,
+        the leads then run 28, 20 and 33 cm sitting and 19, 9 and 23 cm lying, so 40 cm hangs loose.
+        Nothing should pull on a sticker. Not behind the head: Fp1 is too far from there.</p>
+    </li>
+
+    <li>
+      <h3>Start and verify</h3>
+      <p>Nothing to start: PiEEG Server runs as a service and comes up with the Pi, about a minute after
+        power. Power goes in last, after the stickers and clips are on. Then, from the laptop:</p>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>python check_setup.py --noise-test</pre></div>
+      <p class="expect">From <code>pieeg-home-lab/code</code> with the venv active. Every line <b>[ok]</b>
+        means WiFi, Pi, server, 8 channel mode and board all work; the first <b>[FAIL]</b> names the broken
+        link. Or on the Pi itself: <code>pieeg-server doctor</code>, expect <b>All checks passed</b>.</p>
+      <p class="expect">Then open <code>http://tina.local:1617</code> and press Connect. It should show
+        8 channels. Sixteen means the service lacks <code>--device pieeg8</code> (step 4.7).</p>
+      <p class="caption">To run the server by hand, for example with <code>--mock</code> to see the dashboard
+        move without a board, stop the service first: <code>sudo systemctl stop pieeg-server</code>, then
+        <code>pieeg-server --mock</code>. Otherwise the ports are already taken. <code>sudo systemctl start
+        pieeg-server</code> brings the service back.</p>
+    </li>
+
+    <li>
+      <h3>Check the signal</h3>
+      <p>Four outcomes, and what each one means:</p>
+      <ul class="checklist outcomes">
+        <li><span><span class="what">A moving, slightly fuzzy line</span>
+          <span class="why">this is a real signal. Small wiggles are the brain, big slow swings are movement</span></span></li>
+        <li><span><span class="what">A perfectly flat line</span>
+          <span class="why">that channel is not connected. Reseat the electrode, check the pin</span></span></li>
+        <li><span><span class="what">A thick band of hum</span>
+          <span class="why">mains pickup. Everything on the battery, away from the router, notch at 50 Hz</span></span></li>
+        <li><span><span class="what">Huge spikes on one channel only</span>
+          <span class="why">bad contact on that sticker. Alcohol, let it dry, a fresh sticker, recheck the clip</span></span></li>
+      </ul>
+    </li>
+
+    <li>
+      <h3>Record and keep</h3>
+      <div class="cmd"><button class="copy" type="button">Copy</button><pre>python record.py --seconds 60 --label eyes_closed</pre></div>
+      <p class="expect">From <code>pieeg-home-lab/code</code> on the laptop. It writes
+        <code>recordings/&lt;date&gt;_sub-01_eyes_closed.csv</code> plus a <code>.json</code> sidecar with the
+        montage, the filter state and every gap, switches the server's filters off while it records so the
+        file is raw, and puts them back afterwards. <code>spectrum.py</code> reads the result.</p>
+      <p>Without a terminal, the dashboard's <b>Record</b> button saves a raw CSV on the Pi, in
+        <code>~/PiEEG-server/recordings/</code>, and lists it for download. Those files have no sidecar,
+        so note the montage yourself.</p>
+    </li>
+
+  </ol>
+</section>
+
+<section aria-labelledby="tips-h">
+  <h2 id="tips-h">Tips and tricks</h2>
+  <p>Ten rules. They decide whether you get a clean signal or a noisy one, more than any setting does.</p>
+  <ol class="tips">
+    <li>Nothing touches the mains. The Pi on the power bank, the laptop on battery, no monitor, no HDMI,
+      no Ethernet cable while stickers are on.</li>
+    <li>Wipe the skin with alcohol and let it dry. Stickers on skin, never on hair. Contact beats every
+      filter.</li>
+    <li>A fresh sticker every session. They come with gel and only stick well once.</li>
+    <li>Let the three leads hang loose and keep them together. Nothing should pull on a sticker, and a
+      moving cable is noise.</li>
+    <li>Move away from the router and the phone, and put the phone in airplane mode.</li>
+    <li>Sit still for the first minute. Blinks are signal too, they belong to the recording.</li>
+    <li>Switch the notch to 50 Hz. It ships defaulted to 60, which is the American mains, and Berlin hum
+      sits at 50.</li>
+    <li>Leave the 1 to 40 Hz band pass on for watching. It is on when the server starts.
+      <code>record.py</code> records raw regardless, you filter later.</li>
+    <li>Throw away the two seconds around a body movement instead of trying to rescue them.</li>
+    <li>Give the stickers a minute after placing them. The gel to skin contact drifts at first and
+      settles; a recording you care about starts after that.</li>
+  </ol>
+</section>
+
+<section aria-labelledby="broken-h">
+  <h2 id="broken-h">When it doesn't work</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>What you see</th><th>Why</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td>Badge says SAMPLE, not LIVE</td><td>This page comes from the Pi, so the Pi is reachable, but PiEEG Server on port 1616 is not answering, or it just restarted</td><td>Wait: the page tries again by itself every few seconds. Still SAMPLE after a minute: <code>systemctl status pieeg-server</code></td></tr>
+      <tr><td>Badge says connected, no data</td><td>The socket is open but no samples arrive, usually because no shield is mounted</td><td>Fit the PiEEG-8, or start the server with <code>--mock</code> to watch the page move</td></tr>
+      <tr><td>Port 1617 will not load</td><td>The server is not running</td><td><code>systemctl status pieeg-server</code>, then restart it</td></tr>
+      <tr><td><code>tina.local</code> not found</td><td>The name is not resolving, or the Pi has no address</td><td>Find the IP in the router and use the IP</td></tr>
+      <tr><td>Traces flat, straight line</td><td>Sticker off, wrong pin, or the board off by one</td><td>Reseat, then recheck the pin table</td></tr>
+      <tr><td>Thick hum on every channel</td><td>Mains pickup</td><td>Everything on the battery, away from the router, notch at 50 Hz</td></tr>
+      <tr><td>Spikes on one channel</td><td>That sticker has bad contact, or a joint is loose</td><td>Alcohol, a fresh sticker, the clip on the snap, every joint pushed home</td></tr>
+      <tr><td>Dead after a reboot</td><td>The service is not enabled, or it crashed</td><td><code>journalctl -u pieeg-server -n 40</code></td></tr>
+      <tr><td>Shield hot rather than warm</td><td>Wrong seating</td><td>Unplug it, check the alignment drawing</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section aria-labelledby="safe-h">
+  <h2 id="safe-h">Before you put it on anyone</h2>
+  <div class="safety">
+    <ol>
+      <li>It is not a medical device and no regulator has certified it. Education, research and
+        engineering only, never diagnosis or treatment.</li>
+      <li>Power it only from a 5 V battery. Never the mains, never a wall charger, never a computer's USB
+        port, because the board has no isolation between the electrodes and the supply.</li>
+      <li>While stickers are on a person, the Pi runs from the power bank, the laptop runs on battery
+        with its charger unplugged, and nothing else is plugged into the Pi.</li>
+      <li>The electronics are exposed. Anti-static care, and mount or unmount the shield only with the
+        power off.</li>
+      <li>No use with a pacemaker or any implanted device without asking a physician. Stop if the skin
+        gets irritated.</li>
+    </ol>
+  </div>
+</section>
+
+<section aria-labelledby="notebook-h">
+  <h2 id="notebook-h">Lab notebook</h2>
+  <p>What has been measured with this kit, session by session, and the results of each mission, lives in
+    <a href="https://github.com/jurecerkez-code/pieeg-home-lab/blob/main/docs/lab-notebook.md">docs/lab-notebook.md</a>
+    in the repository: date, montage, what was done, what came out, and the plot. Every entry has a
+    recording behind it that <code>record.py</code> wrote, with its sidecar.</p>
+</section>
+
+<footer>
+  <p>Not a medical device. Research and engineering use only.</p>
+  <p>Structure and facts follow
+    <a href="https://www.pieeg.com/hardware/pieeg">pieeg.com/hardware/pieeg</a>. Text written for this
+    kit. Install details, the sudo note and the 50 Hz notch note come from this build, not from the
+    source. The drawings are true scale renders made with the pieeg-home-lab repo: a MakeHuman head and
+    body, the Pi from its official drawing, the PiEEG-8 measured on its photo. The bust and the trace at
+    the top are the repo's own hero. Guide and code:
+    <a href="https://github.com/jurecerkez-code/pieeg-home-lab">github.com/jurecerkez-code/pieeg-home-lab</a>.</p>
+  <p class="dedication" style="margin-top:calc(var(--step)*1.5);font-style:italic;">Volim te i želim da
+    dobiješ ovaj posao i da odeš na doktorat, nadam se da će ti ovo pomoći &lt;3</p>
+</footer>
+
+</div>
+<script src="assets/app.js?v=590def4e"></script>
+</body>
+</html>
